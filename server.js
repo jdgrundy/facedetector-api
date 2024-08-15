@@ -115,7 +115,7 @@ app.put("/image", (req, res) => {
 		.catch((err) => res.status(400).json("unable to update entries"));
 });
 
-//listening and confirming good connection in console:
+//listening and confirming good connection in console
 app.listen(3000, () => {
 	console.log("listening on port 3000");
 });

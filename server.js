@@ -3,8 +3,10 @@ const app = express();
 app.use(express.json());
 const cors = require("cors");
 const bcrypt = require("bcrypt");
-const saltRounds = 10;
+// const saltRounds = 10;
 const knex = require("knex");
+const signin = require("./controllers/signin");
+const register = require("./controllers/register");
 
 const db = knex({
 	client: "pg",
@@ -30,55 +32,12 @@ app.get("/", (req, res) => {
 '/Profile/:userId --> GET = user obj
 */
 
-app.post("/Signin", (req, res) => {
-	db.select("email", "hash")
-		.from("login")
-		.where("email", "=", req.body.email)
-		.then((data) => {
-			const isValid = bcrypt.compareSync(req.body.password, data[0].hash);
-			if (isValid) {
-				return db
-					.select("*")
-					.from("users")
-					.where("email", "=", req.body.email)
-					.then((user) => {
-						res.json(user[0]);
-					});
-			} else {
-				res.json("Email and Password combination not found");
-			}
-		})
-		.catch((err) => res.status(400).json("Unable to signin"));
+app.post("/Signin", (res, req) => {
+	signin.handleSignin(res, req, db, bcrypt);
 });
 
-app.post("/Register", (req, res) => {
-	const { name, email, password } = req.body;
-	const hash = bcrypt.hashSync(password, saltRounds);
-	db.transaction((trx) => {
-		trx
-			.insert({
-				hash: hash,
-				email: email,
-			})
-			.into("login")
-			.returning("email")
-			.then((loginEmail) => {
-				trx("users")
-					.returning("*")
-					.insert({
-						name: name,
-						email: loginEmail[0].email,
-						joined: new Date(),
-					})
-					.then((user) => {
-						res.json(user[0]);
-					});
-			})
-			.then(trx.commit)
-			.catch(trx.rollback);
-	}).catch((err) => {
-		res.status(400).json("Unable to register user. Please check your details.");
-	});
+app.post("/Register", (res, req) => {
+	register.handleRegister(res, req, db, bcrypt);
 });
 
 //return the user
